@@ -1,20 +1,23 @@
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 
 public class CollegeClubStatusGUI extends JFrame {
 
     private HashMap<String, Student> students = new HashMap<>();
-    private JTextField nameField;
-    private JLabel clubLabel, duesLabel, gradeLabel, warningLabel;
+
+    private JComboBox<String> usnDropdown;
+    private JLabel nameLabelDisplay, clubLabel, duesLabel, gradeLabel, usnLabel,
+            paymentLabel, emailLabel, warningLabel;
     private JTextArea tasksArea;
+    private JButton emailButton;
 
     public CollegeClubStatusGUI() {
 
         setTitle("🎓 College Club Status Portal");
-        setSize(650, 560);
+        setSize(900, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -31,43 +34,67 @@ public class CollegeClubStatusGUI extends JFrame {
         add(header, BorderLayout.NORTH);
 
         /* ===== CENTER PANEL ===== */
-        JPanel center = new JPanel(new GridLayout(8, 1, 12, 12));
+        JPanel center = new JPanel(new GridLayout(0, 1, 12, 12));
         center.setBorder(new EmptyBorder(20, 50, 20, 50));
         center.setBackground(Color.WHITE);
 
-        JLabel nameLabel = new JLabel("Enter Student Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        JLabel selectUSNLabel = new JLabel("Select Student USN:");
+        selectUSNLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
 
-        nameField = new JTextField();
-        nameField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        usnDropdown = new JComboBox<>();
+        for (Student s : students.values())
+            usnDropdown.addItem(s.usn);
 
-        JButton button = new JButton("Check Status");
-        button.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        button.setBackground(new Color(76, 175, 80));
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
+        usnDropdown.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        usnDropdown.addActionListener(e -> checkStatus());
 
-        button.addActionListener(e -> checkStatus());
-
+        nameLabelDisplay = new JLabel("Name: ");
+        usnLabel = new JLabel("USN: ");
         clubLabel = new JLabel("Club: ");
         duesLabel = new JLabel("Dues: ");
         gradeLabel = new JLabel("Grade: ");
+        paymentLabel = new JLabel("Payment Status: ");
+        emailLabel = new JLabel("Email Status: ");
 
         Font infoFont = new Font("Segoe UI", Font.PLAIN, 15);
+        nameLabelDisplay.setFont(infoFont);
+        usnLabel.setFont(infoFont);
         clubLabel.setFont(infoFont);
         duesLabel.setFont(infoFont);
         gradeLabel.setFont(infoFont);
+        paymentLabel.setFont(infoFont);
+        emailLabel.setFont(infoFont);
 
         warningLabel = new JLabel("", JLabel.CENTER);
         warningLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
-        center.add(nameLabel);
-        center.add(nameField);
-        center.add(button);
+        emailButton = new JButton("Send Email Reminder");
+        emailButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        emailButton.setBackground(new Color(255, 152, 0));
+        emailButton.setForeground(Color.WHITE);
+        emailButton.setVisible(false);
+        emailButton.addActionListener(e -> sendEmail());
+
+        /* ===== PAID / UNPAID BUTTONS ===== */
+        JButton paidBtn = new JButton("View Paid Students");
+        JButton unpaidBtn = new JButton("View Unpaid Students");
+
+        paidBtn.addActionListener(e -> showPaymentList(true));
+        unpaidBtn.addActionListener(e -> showPaymentList(false));
+
+        center.add(selectUSNLabel);
+        center.add(usnDropdown);
+        center.add(nameLabelDisplay);
+        center.add(usnLabel);
         center.add(clubLabel);
         center.add(duesLabel);
         center.add(gradeLabel);
+        center.add(paymentLabel);
+        center.add(emailLabel);
         center.add(warningLabel);
+        center.add(emailButton);
+        center.add(paidBtn);
+        center.add(unpaidBtn);
 
         add(center, BorderLayout.CENTER);
 
@@ -75,9 +102,6 @@ public class CollegeClubStatusGUI extends JFrame {
         tasksArea = new JTextArea();
         tasksArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         tasksArea.setEditable(false);
-        tasksArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-        tasksArea.setBackground(new Color(245, 245, 245));
-
         JScrollPane scrollPane = new JScrollPane(tasksArea);
         scrollPane.setBorder(BorderFactory.createTitledBorder("📌 Pending Tasks"));
         add(scrollPane, BorderLayout.SOUTH);
@@ -85,90 +109,72 @@ public class CollegeClubStatusGUI extends JFrame {
         setVisible(true);
     }
 
-    /* ===== DATA ===== */
     private void seedData() {
+        students.put("1NH22CS001", new Student("Neha", "Coding Club", true, "₹500 pending",
+                new String[] { "Complete coding assignment", "Submit project report" }, 92, "1NH22CS001"));
 
-        ArrayList<String> nehaTasks = new ArrayList<>();
-        nehaTasks.add("Complete coding assignment");
-        nehaTasks.add("Submit project report");
-        students.put("neha",
-                new Student("Neha", "Coding Club", true, "₹500 pending", nehaTasks, 92));
+        students.put("1NH22AI015", new Student("Sam", "AI Club", false, "No dues",
+                new String[] { "Prepare AI presentation", "Attend AI workshop" }, 88, "1NH22AI015"));
 
-        ArrayList<String> samTasks = new ArrayList<>();
-        samTasks.add("Prepare AI presentation");
-        samTasks.add("Attend AI workshop");
-        students.put("sam",
-                new Student("Sam", "AI Club", false, "No dues", samTasks, 88));
+        students.put("1NH22CS042", new Student("Tim", "Java Club", true, "Assignment pending",
+                new String[] { "Submit Java lab record" }, 81, "1NH22CS042"));
 
-        ArrayList<String> timTasks = new ArrayList<>();
-        timTasks.add("Submit Java lab record");
-        students.put("tim",
-                new Student("Tim", "Java Club", true, "Assignment pending", timTasks, 81));
+        students.put("1NH22ME011", new Student("Jonny", "Robotics Club", false, "No dues",
+                new String[] { "Finalize robotics model", "Test robot performance" }, 96, "1NH22ME011"));
 
-        ArrayList<String> jonnyTasks = new ArrayList<>();
-        jonnyTasks.add("Finalize robotics model");
-        jonnyTasks.add("Test robot performance");
-        students.put("jonny",
-                new Student("Jonny", "Robotics Club", false, "No dues", jonnyTasks, 96));
-
-        ArrayList<String> samanthaTasks = new ArrayList<>();
-        samanthaTasks.add("Complete design presentation");
-        samanthaTasks.add("Submit design sketches");
-        students.put("samantha",
-                new Student("Samantha", "Design Club", true, "₹300 pending", samanthaTasks, 90));
+        students.put("1NH22DS008", new Student("Samantha", "Design Club", true, "₹300 pending",
+                new String[] { "Complete design presentation", "Submit design sketches" }, 90, "1NH22DS008"));
     }
 
-    /* ===== MAIN LOGIC ===== */
     private void checkStatus() {
+        Student s = students.get(usnDropdown.getSelectedItem());
 
-        String name = nameField.getText().trim().toLowerCase();
-
-        if (!students.containsKey(name)) {
-            JOptionPane.showMessageDialog(this, "❌ Student not found");
-            warningLabel.setText("");
-            tasksArea.setText("");
-            speak("Student record not found");
-            return;
-        }
-
-        Student s = students.get(name);
-
+        nameLabelDisplay.setText("Name: " + s.name);
+        usnLabel.setText("USN: " + s.usn);
         clubLabel.setText("Club: " + s.club);
         duesLabel.setText("Dues: " + s.duesMessage);
         gradeLabel.setText("Grade: " + s.numericGrade);
+        paymentLabel.setText("Payment Status: " + s.paymentStatus);
+        emailLabel.setText("Email Status: " + s.emailStatus);
 
         tasksArea.setText("");
-        for (String task : s.pendingTasks) {
-            tasksArea.append("• " + task + "\n");
-        }
-
-        String voiceMessage = "Student " + s.name +
-                ". Club " + s.club +
-                ". Grade " + s.numericGrade + ".";
+        for (String t : s.tasks)
+            tasksArea.append("• " + t + "\n");
 
         if (s.hasDues) {
             warningLabel.setText("⚠ ACTION REQUIRED");
             warningLabel.setForeground(Color.RED);
-            voiceMessage += " Action required. Pending dues.";
+            emailButton.setVisible(true);
         } else {
             warningLabel.setText("✔ ALL CLEAR");
             warningLabel.setForeground(new Color(0, 150, 0));
-            voiceMessage += " All clear. No pending dues.";
+            emailButton.setVisible(false);
         }
-
-        speak(voiceMessage);
     }
 
-    /* ===== VOICE OUTPUT (ANTIGRAVITY SAFE) ===== */
-    private void speak(String text) {
-        try {
-            String command = "PowerShell -Command \"Add-Type –AssemblyName System.Speech; " +
-                    "$speak = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
-                    "$speak.Speak('" + text + "');\"";
-            Runtime.getRuntime().exec(command);
-        } catch (Exception e) {
-            System.out.println("Voice output error");
+    private void sendEmail() {
+        Student s = students.get(usnDropdown.getSelectedItem());
+        s.emailStatus = "Email Sent";
+        emailLabel.setText("Email Status: Email Sent");
+        JOptionPane.showMessageDialog(this, "Email sent to " + s.name);
+    }
+
+    /* ===== SHOW PAID / UNPAID LIST ===== */
+    private void showPaymentList(boolean paid) {
+        JFrame frame = new JFrame(paid ? "Paid Students" : "Unpaid Students");
+        frame.setSize(600, 400);
+
+        String[] cols = { "Name", "USN", "Club", "Status" };
+        DefaultTableModel model = new DefaultTableModel(cols, 0);
+
+        for (Student s : students.values()) {
+            if (paid && !s.hasDues || !paid && s.hasDues) {
+                model.addRow(new Object[] { s.name, s.usn, s.club, s.paymentStatus });
+            }
         }
+
+        frame.add(new JScrollPane(new JTable(model)));
+        frame.setVisible(true);
     }
 
     public static void main(String[] args) {
@@ -176,20 +182,21 @@ public class CollegeClubStatusGUI extends JFrame {
     }
 }
 
-/* ===== STUDENT CLASS (UNCHANGED) ===== */
 class Student {
-    String name, club, duesMessage;
+    String name, club, duesMessage, usn, paymentStatus, emailStatus;
     boolean hasDues;
-    ArrayList<String> pendingTasks;
     int numericGrade;
+    String[] tasks;
 
-    Student(String n, String c, boolean d, String m,
-            ArrayList<String> t, int g) {
+    Student(String n, String c, boolean d, String m, String[] t, int g, String u) {
         name = n;
         club = c;
         hasDues = d;
         duesMessage = m;
-        pendingTasks = t;
+        tasks = t;
         numericGrade = g;
+        usn = u;
+        paymentStatus = d ? "Not Paid" : "Paid";
+        emailStatus = d ? "Email Pending" : "No Action Needed";
     }
 }
